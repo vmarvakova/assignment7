@@ -1,6 +1,8 @@
 // copy any function you need from files knight1.scala and
 // knight2.scala
 
+import scala.annotation.tailrec
+
 type Pos = (Int, Int)    // a position on a chessboard
 type Path = List[Pos]    // a path...a list of positions
 
@@ -24,30 +26,54 @@ def ordered_moves(dim: Int, path: Path, x: Pos): List[Pos] = {
   legal_moves(dim,path,x).sortBy(c => legal_moves(dim,path,c).size)
 }
 
-//(3b) Complete the function that searches for a single *closed*
-// tour using the ordered moves function.
 
+@tailrec
 def first(xs: List[Pos], f: Pos => Option[Path]): Option[Path] = xs match {
   case Nil => None
 
-  case x:: xs => {
-    if (f(x).isDefined) {
-      // println(f(x).get)
-      f(x)
+  case (s:: xs) =>
+    val newF=f(s)
+    if (newF.isDefined) {
+      newF
     }
     else {
       first(xs, f)
     }
-  }
 
 }
 
+
 def first_closed_tour_heuristic(dim: Int, path: Path): Option[Path] = {
-  if (path.size==dim*dim) {
+  val dim2= dim*dim
+  val top = path.head
+  if (path.size==dim2 && List((top._1+1, top._2+2),(top._1+2, top._2+1),
+    (top._1+2, top._2-1),  (top._1+1, top._2-2),(top._1-1, top._2-2),
+    (top._1-2, top._2-1),(top._1-2, top._2+1),
+    (top._1-1,top._2+2)).contains(path.last)) {
+    //need to return option
     Some(path)
   }
   else  {
-    first(ordered_moves(dim,path,path.head),i => first_closed_tour_heuristic(dim,i::path))
+    first(ordered_moves(dim,path,top),f => first_closed_tour_heuristic(dim,f::path))
   }
 
 }
+
+def first_tour_heuristic(dim: Int, path: Path): Option[Path] = {
+  val dim2= dim*dim
+  val top = path.head
+  if (path.size>=dim2) {
+    Some(path)
+  }
+
+  else {
+    val moves = ordered_moves(dim,path,top)
+    if (moves.nonEmpty)  first_tour_heuristic(dim,ordered_moves(dim,path,top).head::path)
+
+    else first(ordered_moves(dim,path,top),f => first_tour_heuristic(dim,f::path))
+
+  }
+
+}
+
+first_closed_tour_heuristic(5,List((0,0)))
